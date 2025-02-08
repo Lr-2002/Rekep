@@ -8,24 +8,31 @@ import numpy as np
 import time
 from datetime import datetime
 
+
 # Function to encode the image
 def encode_image(image_path):
     with open(image_path, "rb") as image_file:
-        return base64.b64encode(image_file.read()).decode('utf-8')
+        return base64.b64encode(image_file.read()).decode("utf-8")
+
 
 class ConstraintGenerator:
     def __init__(self, config):
         self.config = config
-        self.client = OpenAI(api_key=os.environ['OPENAI_API_KEY'], base_url="https://api.chatanywhere.tech/v1")
-        self.base_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), './vlm_query')
-        with open(os.path.join(self.base_dir, 'prompt_template.txt'), 'r') as f:
+        self.client = OpenAI(
+            api_key=os.environ["OPENAI_API_KEY"],
+            base_url="https://api.closeai-proxy.xyz/v1",
+        )
+        self.base_dir = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), "./vlm_query"
+        )
+        with open(os.path.join(self.base_dir, "prompt_template.txt"), "r") as f:
             self.prompt_template = f.read()
 
     def _build_prompt(self, image_path, instruction):
         img_base64 = encode_image(image_path)
         prompt_text = self.prompt_template.format(instruction=instruction)
         # save prompt
-        with open(os.path.join(self.task_dir, 'prompt.txt'), 'w') as f:
+        with open(os.path.join(self.task_dir, "prompt.txt"), "w") as f:
             f.write(prompt_text)
         messages = [
             {
@@ -33,15 +40,13 @@ class ConstraintGenerator:
                 "content": [
                     {
                         "type": "text",
-                        "text": self.prompt_template.format(instruction=instruction)
+                        "text": self.prompt_template.format(instruction=instruction),
                     },
                     {
                         "type": "image_url",
-                        "image_url": {
-                            "url": f"data:image/png;base64,{img_base64}"
-                        }
+                        "image_url": {"url": f"data:image/png;base64,{img_base64}"},
                     },
-                ]
+                ],
             }
         ]
         return messages
@@ -56,7 +61,7 @@ class ConstraintGenerator:
                 name = line.split("(")[0].split("def ")[1]
             if line.startswith("    return "):
                 end = i
-                functions[name] = lines[start:end+1]
+                functions[name] = lines[start : end + 1]
         # organize them based on hierarchy in function names
         groupings = dict()
         for name in functions:
@@ -71,7 +76,7 @@ class ConstraintGenerator:
                 for name in groupings[key]:
                     f.write("\n".join(functions[name]) + "\n\n")
         print(f"Constraints saved to {save_dir}")
-    
+
     def _parse_other_metadata(self, output):
         data_dict = dict()
         # find num_stages
@@ -82,7 +87,7 @@ class ConstraintGenerator:
                 break
         if num_stages is None:
             raise ValueError("num_stages not found in output")
-        data_dict['num_stages'] = int(num_stages['num_stages'])
+        data_dict["num_stages"] = int(num_stages["num_stages"])
         # find grasp_keypoints
         grasp_keypoints_template = "grasp_keypoints = {grasp_keypoints}"
         for line in output.split("\n"):
@@ -91,10 +96,15 @@ class ConstraintGenerator:
                 break
         if grasp_keypoints is None:
             raise ValueError("grasp_keypoints not found in output")
-        # convert into list of ints 
-        grasp_keypoints = grasp_keypoints['grasp_keypoints'].replace("[", "").replace("]", "").split(",")
+        # convert into list of ints
+        grasp_keypoints = (
+            grasp_keypoints["grasp_keypoints"]
+            .replace("[", "")
+            .replace("]", "")
+            .split(",")
+        )
         grasp_keypoints = [int(x.strip()) for x in grasp_keypoints]
-        data_dict['grasp_keypoints'] = grasp_keypoints
+        data_dict["grasp_keypoints"] = grasp_keypoints
         # find release_keypoints
         release_keypoints_template = "release_keypoints = {release_keypoints}"
         for line in output.split("\n"):
@@ -104,18 +114,43 @@ class ConstraintGenerator:
         if release_keypoints is None:
             raise ValueError("release_keypoints not found in output")
         # convert into list of ints
-        release_keypoints = release_keypoints['release_keypoints'].replace("[", "").replace("]", "").split(",")
+        release_keypoints = (
+            release_keypoints["release_keypoints"]
+            .replace("[", "")
+            .replace("]", "")
+            .split(",")
+        )
         release_keypoints = [int(x.strip()) for x in release_keypoints]
-        data_dict['release_keypoints'] = release_keypoints
+        data_dict["release_keypoints"] = release_keypoints
         return data_dict
 
     def _save_metadata(self, metadata):
         for k, v in metadata.items():
             if isinstance(v, np.ndarray):
                 metadata[k] = v.tolist()
-        with open(os.path.join(self.task_dir, 'metadata.json'), 'w') as f:
+        with open(os.path.join(self.task_dir, "metadata.json"), "w") as f:
             json.dump(metadata, f)
         print(f"Metadata saved to {os.path.join(self.task_dir, 'metadata.json')}")
+
+    def _query_client(self, messages):
+        stream = self.client.chat.completions.create(
+            model=self.config["model"],
+            messages=messages,
+            temperature=self.config["temperature"],
+            max_tokens=self.config["max_tokens"],
+            stream=True,
+        )
+        output = ""
+        start = time.time()
+        for chunk in stream:
+            print(f"[{time.time()-start:.2f}s] Querying OpenAI API...", end="\r")
+            print(f"the shape of the chunk is {chunk.choices}")
+            if chunk.choices != [] and chunk.choices[0].delta.content is not None:
+                output += chunk.choices[0].delta.content
+        print(f"[{time.time()-start:.2f}s] Querying OpenAI API...Done")
+        return output
+
+    # def _double_check_output(self, messages):
 
     def generate(self, img, instruction, metadata):
         """
@@ -126,29 +161,32 @@ class ConstraintGenerator:
             save_dir (str): directory where the constraints
         """
         # create a directory for the task
-        fname = datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + "_" + instruction.lower().replace(" ", "_")
+        fname = (
+            datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+            + "_"
+            + instruction.lower().replace(" ", "_")
+        )
         self.task_dir = os.path.join(self.base_dir, fname)
         os.makedirs(self.task_dir, exist_ok=True)
         # save query image
-        image_path = os.path.join(self.task_dir, 'query_img.png')
+        image_path = os.path.join(self.task_dir, "query_img.png")
         cv2.imwrite(image_path, img[..., ::-1])
         # build prompt
         messages = self._build_prompt(image_path, instruction)
         # stream back the response
-        stream = self.client.chat.completions.create(model=self.config['model'],
-                                                        messages=messages,
-                                                        temperature=self.config['temperature'],
-                                                        max_tokens=self.config['max_tokens'],
-                                                        stream=True)
-        output = ""
-        start = time.time()
-        for chunk in stream:
-            print(f'[{time.time()-start:.2f}s] Querying OpenAI API...', end='\r')
-            if chunk.choices[0].delta.content is not None:
-                output += chunk.choices[0].delta.content
-        print(f'[{time.time()-start:.2f}s] Querying OpenAI API...Done')
+        if "o1" not in self.config["model"]:
+            output = self._query_client(messages)
+        else:
+            response = self.client.chat.completions.create(
+                model=self.config["model"],
+                messages=messages,
+                # temperature=self.config["temperature"],
+                max_completion_tokens=self.config["max_tokens"],
+            )
+            print(f"the output of o1 query is {response.choices}")
+            output = response.choices[0].message.content
         # save raw output
-        with open(os.path.join(self.task_dir, 'output_raw.txt'), 'w') as f:
+        with open(os.path.join(self.task_dir, "output_raw.txt"), "w") as f:
             f.write(output)
         # parse and save constraints
         self._parse_and_save_constraints(output, self.task_dir)
