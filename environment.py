@@ -157,7 +157,7 @@ class ReKepOGEnv:
         self.keypoints = keypoints
         self._keypoint_registry = dict()
         self._keypoint2object = dict()
-        exclude_names = ['wall', 'floor', 'ceiling', 'table', 'fetch', 'robot']
+        exclude_names = ['wall', 'floor', 'ceiling',  'fetch', 'robot']
         for idx, keypoint in enumerate(keypoints):
             closest_distance = np.inf
             for obj in self.og_env.scene.objects:

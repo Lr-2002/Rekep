@@ -55,8 +55,8 @@ class Visualizer:
 
     def show_img(self, rgb):
         cv2.imshow("img", rgb[..., ::-1])
-        cv2.waitKey(500)
-        # cv2.waitKey(0)
+        # cv2.waitKey(500)
+        cv2.waitKey(0)
         print(
             'showing image, click on the window and press "ESC" to close and continue'
         )
@@ -75,7 +75,7 @@ class Visualizer:
         print(
             'visualizing pointcloud, click on the window and press "ESC" to close and continue'
         )
-        # o3d.visualization.draw_geometries([pcd])
+        o3d.visualization.draw_geometries([pcd])
 
     def _get_scene_points_and_colors(self):
         # scene

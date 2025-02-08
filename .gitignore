@@ -4,3 +4,5 @@
 *.egg
 
 ./videos
+videos
+vlm_query
