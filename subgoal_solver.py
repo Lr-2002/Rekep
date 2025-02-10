@@ -74,7 +74,7 @@ def objective(opt_vars,
         grasp_cost = 10.0 * grasp_cost
         debug_dict['grasp_cost'] = grasp_cost
         cost += grasp_cost
-
+    # TODO, this position is very very important ! !! you need to  use other grasp to solve !!! 
     # goal constraint violation cost
     debug_dict['subgoal_constraint_cost'] = None
     debug_dict['subgoal_violation'] = None
