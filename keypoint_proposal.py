@@ -47,7 +47,7 @@ class KeypointProposer:
         candidate_rigid_group_ids = candidate_rigid_group_ids[sort_idx]
         # project keypoints to image space
         projected = self._project_keypoints_to_img(rgb, candidate_pixels, candidate_rigid_group_ids, masks, features_flat)
-        return candidate_keypoints, projected
+        return candidate_keypoints, projected, candidate_rigid_group_ids
 
     def _preprocess(self, rgb, points, masks):
         if masks.is_cuda:

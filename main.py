@@ -76,7 +76,7 @@ class Main:
         # = keypoint proposal and constraint generation
         # ====================================
         if rekep_program_dir is None:
-            keypoints, projected_img = self.keypoint_proposer.get_keypoints(
+            keypoints, projected_img, candidate_group_ids = self.keypoint_proposer.get_keypoints(
                 rgb, points, mask
             )
             print(
@@ -89,7 +89,7 @@ class Main:
                 "num_keypoints": len(keypoints),
             }
             rekep_program_dir = self.constraint_generator.generate(
-                projected_img, instruction, keypoints, metadata 
+                projected_img, instruction, keypoints,candidate_group_ids, metadata 
             )
             print(f"{bcolors.HEADER}Constraints generated{bcolors.ENDC}")
         # ====================================

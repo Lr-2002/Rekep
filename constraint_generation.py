@@ -30,11 +30,11 @@ class ConstraintGenerator:
         with open(os.path.join(self.base_dir, "prompt_template.txt"), "r") as f:
             self.prompt_template = f.read()
 
-    def _build_prompt(self, image_path, instruction, keypoints):
+    def _build_prompt(self, image_path, instruction, keypoints, keypoint_groups):
         img_base64 = encode_image(image_path)
-        points_text = "point_number, x, y, z\n"
+        points_text = "point_number, point_group, x, y, z\n"
         for i in range(len(keypoints)):
-            points_text += f"point{i}, {keypoints[i][0]:.3f}, {keypoints[i][1]:.3f}, {keypoints[i][2]:.3f}\n"
+            points_text += f"point{i}, {keypoint_groups[i]} {keypoints[i][0]:.3f}, {keypoints[i][1]:.3f}, {keypoints[i][2]:.3f}\n"
         prompt_text = self.prompt_template.format(instruction=instruction, points=points_text)
         # save prompt
         with open(os.path.join(self.task_dir, "prompt.txt"), "w") as f:
@@ -157,7 +157,7 @@ class ConstraintGenerator:
 
     # def _double_check_output(self, messages):
 
-    def generate(self, img, instruction, keypoints, metadata):
+    def generate(self, img, instruction, keypoints, keypoint_groups, metadata):
         """
         Args:
             img (np.ndarray): image of the scene (H, W, 3) uint8
@@ -177,7 +177,7 @@ class ConstraintGenerator:
         image_path = os.path.join(self.task_dir, "query_img.png")
         cv2.imwrite(image_path, img[..., ::-1])
         # build prompt
-        messages = self._build_prompt(image_path, instruction, keypoints)
+        messages = self._build_prompt(image_path, instruction, keypoints, keypoint_groups)
         # stream back the response
         if "o1" not in self.config["model"]:
             output = self._query_client(messages)
