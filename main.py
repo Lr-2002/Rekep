@@ -89,7 +89,7 @@ class Main:
                 "num_keypoints": len(keypoints),
             }
             rekep_program_dir = self.constraint_generator.generate(
-                projected_img, instruction, metadata
+                projected_img, instruction, keypoints, metadata 
             )
             print(f"{bcolors.HEADER}Constraints generated{bcolors.ENDC}")
         # ====================================

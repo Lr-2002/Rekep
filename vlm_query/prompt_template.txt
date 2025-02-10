@@ -72,6 +72,7 @@ Suppose you are controlling a robot to perform manipulation tasks by writing con
 - If your task is to open cabinet/drawer, the sliding axis of the drawer should be determined by extracting at least three keypoints on the drawer surface. Compute two vectors along the surface, take their cross-product to obtain the drawer’s normal direction, and normalize it. Use this normal vector to compute the motion direction for pulling the drawer open.
   and then let the position of a non-drawer keypoint on the cabinet be updated by adding this motion vector to obtain the final target position. Finally, use the spatial distance between this final position and the end-effector position as a constraint.
 - If you need to manipulate some heavy object (might be hard to lift), just keep the z in your contraints to avoid harm to robot.
+- Notice that provided image is only 2D and the real position of keypoints may in different position , you could use the 3D position provided to help you analysis.
 **Structure your output in a single python code block as follows:**
 ```python
 
@@ -119,4 +120,5 @@ release_keypoints = [?, ..., ?]
 
 ## Query
 Query Task: "{instruction}"
+Query PointDistances: "{points}"
 Query Image:
