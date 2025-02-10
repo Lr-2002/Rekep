@@ -512,3 +512,70 @@ class ReKepOGEnv:
             cam_id = int(cam_id)
             self.cams[cam_id] = OGCamera(self.og_env, cam_config[cam_id])
         for _ in range(10): og.sim.render()
+    
+
+    def get_object_mass(self, obj_name):
+        """
+        Get the mass of an object in the scene.
+        
+        Args:
+            obj_name (str): Name of the object (e.g., 'cube_0')
+        Returns:
+            float: Total mass of the object in kilograms
+        """
+        # Find the object in the scene
+        obj = None
+        for scene_obj in self.og_env.scene.objects:
+            if scene_obj.name == obj_name:
+                obj = scene_obj
+                break
+        
+        if obj is None:
+            raise ValueError(f"Object {obj_name} not found in scene")
+        
+        # Sum mass across all links
+        total_mass = 0
+        for link in obj.links.values():
+            total_mass += link.mass
+            
+        return total_mass
+
+    def print_object_info(self, obj_name):
+        """
+        Print detailed information about an object including its mass.
+        
+        Args:
+            obj_name (str): Name of the object (e.g., 'cube_0')
+        """
+        # Find the object in the scene
+        obj = None
+        for scene_obj in self.og_env.scene.objects:
+            if scene_obj.name == obj_name:
+                obj = scene_obj
+                break
+        
+        if obj is None:
+            raise ValueError(f"Object {obj_name} not found in scene")
+            
+        print(f"\nObject Info for: {obj_name}")
+        print("-" * 40)
+        print(f"Total Mass: {self.get_object_mass(obj_name):.3f} kg")
+        print(f"Position: {obj.get_position()}")
+        print(f"Orientation: {obj.get_orientation()}")
+        print(f"Number of links: {len(obj.links)}")
+        for link_name, link in obj.links.items():
+            print(f"\nLink: {link_name}")
+            print(f"  Mass: {link.mass:.3f} kg")
+            if hasattr(link, '_physics_link'):
+                print(f"  Physics enabled: {link._physics_link is not None}")
+
+    def change_obj_mass(self, obj_name, mass=0.5):
+
+        obj = None
+        for scene_obj in self.og_env.scene.objects:
+            if scene_obj.name == obj_name:
+                obj = scene_obj
+                break
+        obj.links['base_link']._rigid_prim_view.set_masses(torch.tensor(mass))
+        print('--------------, after change mass, the mass of {} is {}'.format(obj_name, self.get_object_mass(obj_name)))
+        self.print_object_info(obj_name)

@@ -7,7 +7,7 @@ def parse_args():
     parser.add_argument(
         "--scene",
         type=str,
-        default="./configs/og_scene_file_cabinet.json",
+        default="./configs/og_scene_file_only_cube.json",
         help="Path to the scene configuration file",
     )
     return parser.parse_args()
@@ -19,7 +19,8 @@ def main():
     global_config = get_config(config_path="./configs/config.yaml")
     # Create environment
     env = ReKepOGEnv(global_config["env"], args.scene)
-    
+    env.print_object_info('cube_1')   
+    env.change_obj_mass('cube_1', mass=0.5)
     # Keep the environment visualization running
     while True:
         env._step()
