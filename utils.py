@@ -443,6 +443,7 @@ def save_mask_as_image(mask, filename='tmp.png'):
     import cv2
     import os
     import numpy as np
+    import torch
     filename = os.path.join('tmp', filename)
     
     # Create output directory if it doesn't exist
@@ -450,7 +451,7 @@ def save_mask_as_image(mask, filename='tmp.png'):
         os.makedirs(os.path.dirname(filename), exist_ok=True)
     
     # Convert boolean/binary mask to uint8 (0 or 255)
-    if isinstance(mask, torch.tensor):
+    if isinstance(mask, torch.Tensor):
         mask = mask.cpu().numpy()
     mask_uint8 = np.uint8(mask) * 255
     

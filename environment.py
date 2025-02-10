@@ -574,10 +574,11 @@ class ReKepOGEnv:
                 self.video_caches[cam_id]['depth'].pop(0)
                 self.video_caches[cam_id]['color'].append(obs['rgb'])
                 self.video_caches[cam_id]['depth'].append(obs['depth'])
-        if len(self.video_caches[1]['color']) > 100:
-            self.save_dataset()
-            import sys 
-            sys.exit(0)
+            # print('cam_id is ', cam_id, 'position is ', self.cams[cam_id].get_position(), 'orientation is ', self.cams[cam_id].get_orientation())
+        # if len(self.video_caches[1]['color']) > 100:
+        #     self.save_dataset()
+        #     import sys 
+        #     sys.exit(0)
         self.step_counter += 1
 
     def _initialize_cameras(self, cam_config):
@@ -665,3 +666,6 @@ class ReKepOGEnv:
         obj.links['base_link']._rigid_prim_view.set_masses(torch.tensor(mass))
         print('--------------, after change mass, the mass of {} is {}'.format(obj_name, self.get_object_mass(obj_name)))
         self.print_object_info(obj_name)
+
+    def print_seg_id_mapping(self):
+        return {x._uuid: x._name for x in self.og_env.scene.objects}

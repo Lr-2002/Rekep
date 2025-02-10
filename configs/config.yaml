@@ -74,12 +74,17 @@ env:
       orientation:  [ 0.4682, -0.3212  ,  -0.2656, 0.6788  ]
       resolution: 480
     # vlm camera
+    # 0:
+    #   name: cam_0
+    #   position: [-0.1655,  0.0167,  1.3664]
+    #   orientation: [ 0.0550,  0.0544,  0.7010,  0.7090]
+    #   resolution: 480
+
     0:
       name: cam_0
-      position: [-0.1655,  0.0167,  1.3664]
-      orientation: [ 0.0550,  0.0544,  0.7010,  0.7090]
+      position: [ 0.4, -1., 1.05]
+      orientation:  [ 0.5922785, 0.089451, 0.0984758, 0.7946743 ]
       resolution: 480
-
 
 path_solver:
   opt_pos_step_size: 0.20  # controls the density of control points in the path
@@ -105,7 +110,7 @@ subgoal_solver:
 
 keypoint_proposer:
   num_candidates_per_mask: 10
-  min_dist_bt_keypoints: 0.01
+  min_dist_bt_keypoints: 0.02
   max_mask_ratio: 1.0
   device: *device
   bounds_min: *bounds_min

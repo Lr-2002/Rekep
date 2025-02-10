@@ -60,6 +60,12 @@ class KeypointProposer:
             
         # convert masks to binary masks
         masks = [masks == uid for uid in np.unique(masks.numpy())]
+        total_masks = []
+        for mssk in masks :
+            if mssk[30, -30] :
+                continue
+            total_masks.append(mssk)
+        masks = total_masks
         # print("***masks2", masks)
         # ensure input shape is compatible with dinov2
         H, W, _ = rgb.shape
