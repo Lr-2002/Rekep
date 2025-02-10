@@ -149,6 +149,8 @@ class KeypointProposer:
             feature_points_torch  = (feature_points_torch - feature_points_torch.min(0)[0]) / (feature_points_torch.max(0)[0] - feature_points_torch.min(0)[0])
             X = torch.cat([X, feature_points_torch], dim=-1)
             # cluster features to get meaningful regions
+            if torch.isnan(X).any():
+                continue
             cluster_ids_x, cluster_centers = kmeans(
                 X=X,
                 num_clusters=self.config['num_candidates_per_mask'],

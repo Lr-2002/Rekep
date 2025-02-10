@@ -82,7 +82,7 @@ env:
 
     0:
       name: cam_0
-      position: [ 0.4, -1., 1.05]
+      position: [ 0.0, -0.7, 1.05]
       orientation:  [ 0.5922785, 0.089451, 0.0984758, 0.7946743 ]
       resolution: 480
 
