@@ -461,7 +461,7 @@ if __name__ == "__main__":
     task_list = {
         "pen": {
             "scene_file": "./configs/og_scene_file_cabinet.json",
-            "instruction": "Close the cabinet",
+            "instruction": "Open the cabinet",
             # reorient the pen , drop the pen into the black pen holder and then
             "rekep_program_dir": "./vlm_query/2025-01-01_22-04-23_put_the_bottle_besides_the_black_pen_holder_and_notice_not_to_move_the_black_pen_holder",
             # "disturbance_seq": {
