@@ -56,7 +56,7 @@ Fetch._initialize = ManipulationRobot._initialize
 BaseController.clip_control = custom_clip_control
 
 class ReKepOGEnv:
-    def __init__(self, config, scene_file, verbose=False):
+    def __init__(self, config, scene_file, verbose=False, mass=0.5, need_change_mass=False):
         self.video_cache = []
         self.config = config
         self.verbose = verbose
@@ -68,6 +68,8 @@ class ReKepOGEnv:
         # create omnigibson environment
         self.step_counter = 0
         self.og_env = og.Environment(dict(scene=self.config['scene'], robots=[self.config['robot']['robot_config']], env=self.config['og_sim']))
+        if need_change_mass:
+            self.change_obj_mass('cube_1', mass=mass)
         self.og_env.scene.update_initial_state()
         for _ in range(10): og.sim.step()
         # robot vars

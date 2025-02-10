@@ -40,7 +40,7 @@ class Main:
             global_config["constraint_generator"]
         )
         # initialize environment
-        self.env = ReKepOGEnv(global_config["env"], scene_file, verbose=False)
+        self.env = ReKepOGEnv(global_config["env"], scene_file, verbose=False, need_change_mass=True, mass=5.0)
         # setup ik solver (for reachability cost)
         assert isinstance(
             self.env.robot, Fetch
