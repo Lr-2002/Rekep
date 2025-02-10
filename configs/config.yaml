@@ -24,6 +24,12 @@ env:
     type: InteractiveTraversableScene
     scene_model: Rs_int
 
+  # Mass configuration for objects
+  mass_config:
+    enabled: false  # Whether to change object mass
+    target_mass: 0.5  # Mass value in kg
+    target_object: "cube_1"  # Object name to change mass
+
   bounds_min: *bounds_min
   bounds_max: *bounds_max
   interpolate_pos_step_size: *interpolate_pos_step_size
@@ -58,16 +64,22 @@ env:
     # recorder 
     1:
       name: cam_1
-      position: [ 0.6137,  0.4764,  1.4565]
+      position: [ 0.6137,  0.4764,  1.0565]
       orientation: [ 0.3212,  0.4682,  0.6788,  0.4656]
       resolution: 480
 
+    2:
+      name: cam_2
+      position: [ -0.8137,  -0.6764,  1.0565]
+      orientation:  [ 0.4682, -0.3212  ,  -0.2656, 0.6788  ]
+      resolution: 480
     # vlm camera
     0:
       name: cam_0
       position: [-0.1655,  0.0167,  1.3664]
       orientation: [ 0.0550,  0.0544,  0.7010,  0.7090]
       resolution: 480
+
 
 path_solver:
   opt_pos_step_size: 0.20  # controls the density of control points in the path
@@ -92,7 +104,7 @@ subgoal_solver:
     maxiter: 200
 
 keypoint_proposer:
-  num_candidates_per_mask: 5
+  num_candidates_per_mask: 10
   min_dist_bt_keypoints: 0.01
   max_mask_ratio: 1.0
   device: *device

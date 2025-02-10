@@ -40,7 +40,7 @@ class Main:
             global_config["constraint_generator"]
         )
         # initialize environment
-        self.env = ReKepOGEnv(global_config["env"], scene_file, verbose=False, need_change_mass=True, mass=5.0)
+        self.env = ReKepOGEnv(global_config["env"], scene_file, verbose=False)
         # setup ik solver (for reachability cost)
         assert isinstance(
             self.env.robot, Fetch
@@ -464,11 +464,6 @@ if __name__ == "__main__":
             "instruction": "Open the cabinet",
             # reorient the pen , drop the pen into the black pen holder and then
             "rekep_program_dir": "./vlm_query/2025-01-01_22-04-23_put_the_bottle_besides_the_black_pen_holder_and_notice_not_to_move_the_black_pen_holder",
-            # "disturbance_seq": {
-            #     1: stage1_disturbance_seq,
-            #     2: stage2_disturbance_seq,
-            #     3: stage3_disturbance_seq,
-            # },
         },
         "only_one_cube": {
             "scene_file": "./configs/og_scene_file_only_cube.json",
@@ -482,7 +477,7 @@ if __name__ == "__main__":
             # },
         },
     }
-    task = task_list["only_one_cube"]
+    task = task_list["cabinet"]
     scene_file = task["scene_file"]
     instruction = task["instruction"]
     main = Main(scene_file, visualize=args.visualize)

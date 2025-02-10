@@ -56,10 +56,11 @@ Fetch._initialize = ManipulationRobot._initialize
 BaseController.clip_control = custom_clip_control
 
 class ReKepOGEnv:
-    def __init__(self, config, scene_file, verbose=False, mass=0.5, need_change_mass=False):
-        self.video_cache = []
+    def __init__(self, config, scene_file, verbose=False):
+        self.video_caches = {}  # Dictionary to store caches for each camera
         self.config = config
         self.verbose = verbose
+        self.scene_file = scene_file
         self.config['scene']['scene_file'] = scene_file
         self.bounds_min = np.array(self.config['bounds_min'])
         self.bounds_max = np.array(self.config['bounds_max'])
@@ -68,8 +69,15 @@ class ReKepOGEnv:
         # create omnigibson environment
         self.step_counter = 0
         self.og_env = og.Environment(dict(scene=self.config['scene'], robots=[self.config['robot']['robot_config']], env=self.config['og_sim']))
-        if need_change_mass:
-            self.change_obj_mass('cube_1', mass=mass)
+        
+        # Apply mass changes if configured
+        if 'mass_config' in self.config and self.config['mass_config']['enabled']:
+            mass_config = self.config['mass_config']
+            self.change_obj_mass(
+                obj_name=mass_config['target_object'],
+                mass=mass_config['target_mass']
+            )
+            
         self.og_env.scene.update_initial_state()
         for _ in range(10): og.sim.step()
         # robot vars
@@ -271,7 +279,7 @@ class ReKepOGEnv:
         ee_pose[:3] += np.array([0.0, -0.2, -0.1])
         action = np.concatenate([ee_pose, [self.get_gripper_null_action()]])
         self.execute_action(action, precise=True)
-        self.video_cache = []
+        # self.video_caches = {}  # Reset video caches
         print(f'{bcolors.HEADER}Reset done.{bcolors.ENDC}')
 
     def is_grasping(self, candidate_obj=None):
@@ -426,13 +434,71 @@ class ReKepOGEnv:
         if save_path is None:
             save_path = os.path.join(save_dir, f'{datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")}.mp4')
         video_writer = imageio.get_writer(save_path, fps=30)
-        for rgb in self.video_cache:
+        for rgb in self.video_caches[1]['color']:
             # print(type(rgb), rgb.shape) 
             if not isinstance(rgb, np.ndarray):
                 rgb = np.array(rgb)
             video_writer.append_data(rgb)
         video_writer.close()
         return save_path
+
+    def save_dataset(self, dataset_name=None):
+        """
+        Save the cached data in a structured format.
+        
+        Args:
+            dataset_name (str): Name of the dataset directory. If None, uses timestamp.
+        """
+        import os
+        import cv2
+        import numpy as np
+        from datetime import datetime
+        
+        if dataset_name is None:
+            dataset_name = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+            
+        base_dir = os.path.join(os.path.dirname(__file__), 'datasets', dataset_name)
+        
+        # Save data for each camera
+        for cam_id, cache in self.video_caches.items():
+            cam_dir = os.path.join(base_dir, f'camera_{cam_id}')
+            color_dir = os.path.join(cam_dir, 'color')
+            depth_dir = os.path.join(cam_dir, 'depth')
+            
+            # Create directories
+            os.makedirs(color_dir, exist_ok=True)
+            os.makedirs(depth_dir, exist_ok=True)
+            
+            # Save images
+            for i, (color, depth) in enumerate(zip(cache['color'], cache['depth'])):
+                # Convert color image to uint8 and BGR format
+                if isinstance(color, torch.Tensor):
+                    color = color.cpu().numpy()
+                color = color.astype(np.uint8)
+                color_bgr = cv2.cvtColor(color, cv2.COLOR_RGB2BGR)
+                cv2.imwrite(os.path.join(color_dir, f'{i:06d}.png'), color_bgr)
+                
+                # Save depth image (normalize to 16-bit)
+                if isinstance(depth, torch.Tensor):
+                    depth = depth.cpu().numpy()
+                depth_norm = (depth).astype(np.uint16)
+                cv2.imwrite(os.path.join(depth_dir, f'{i:06d}.png'), depth_norm)
+            
+            # Save camera parameters
+            np.save(os.path.join(cam_dir, 'camera_extrinsics.npy'), cache['params']['extrinsics'])
+            
+            # Extract and save intrinsics in [fx, fy, cx, cy] format
+            intrinsics_matrix = cache['params']['intrinsics']
+            intrinsics_params = np.array([
+                intrinsics_matrix[0, 0],  # fx
+                intrinsics_matrix[1, 1],  # fy
+                intrinsics_matrix[0, 2],  # cx
+                intrinsics_matrix[1, 2]   # cy
+            ])
+            np.save(os.path.join(cam_dir, 'camera_intrinsics.npy'), intrinsics_params)
+            
+        print(f"Dataset saved to: {base_dir}")
+        return base_dir
 
     # ======================================
     # = internal functions
@@ -496,13 +562,22 @@ class ReKepOGEnv:
             self.og_env.step(action)
         else:
             og.sim.step()
+            
+        # Get observations from all cameras
         cam_obs = self.get_cam_obs()
-        rgb = cam_obs[1]['rgb']
-        if len(self.video_cache) < self.config['video_cache_size']:
-            self.video_cache.append(rgb)
-        else:
-            self.video_cache.pop(0)
-            self.video_cache.append(rgb)
+        for cam_id, obs in cam_obs.items():
+            if len(self.video_caches[cam_id]['color']) < self.config['video_cache_size']:
+                self.video_caches[cam_id]['color'].append(obs['rgb'])
+                self.video_caches[cam_id]['depth'].append(obs['depth'])
+            else:
+                self.video_caches[cam_id]['color'].pop(0)
+                self.video_caches[cam_id]['depth'].pop(0)
+                self.video_caches[cam_id]['color'].append(obs['rgb'])
+                self.video_caches[cam_id]['depth'].append(obs['depth'])
+        if len(self.video_caches[1]['color']) > 100:
+            self.save_dataset()
+            import sys 
+            sys.exit(0)
         self.step_counter += 1
 
     def _initialize_cameras(self, cam_config):
@@ -513,6 +588,15 @@ class ReKepOGEnv:
         for cam_id in cam_config:
             cam_id = int(cam_id)
             self.cams[cam_id] = OGCamera(self.og_env, cam_config[cam_id])
+            # Initialize cache for each camera
+            self.video_caches[cam_id] = {
+                'color': [],
+                'depth': [],
+                'params': {
+                    'intrinsics': self.cams[cam_id].intrinsics,
+                    'extrinsics': self.cams[cam_id].extrinsics
+                }
+            }
         for _ in range(10): og.sim.render()
     
 
