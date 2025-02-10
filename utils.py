@@ -430,3 +430,29 @@ def farthest_point_sampling(pc, num_points):
     pcd.points = o3d.utility.Vector3dVector(pc)
     downpcd_farthest = pcd.farthest_point_down_sample(num_points)
     return np.asarray(downpcd_farthest.points)
+
+
+def save_mask_as_image(mask, filename='tmp.png'):
+    """
+    Save a binary mask as an image file.
+    
+    Args:
+        mask (np.ndarray): Binary mask array (True/False or 1/0)
+        filename (str): Output filename (e.g., 'masks/mask_1.png')
+    """
+    import cv2
+    import os
+    import numpy as np
+    filename = os.path.join('tmp', filename)
+    
+    # Create output directory if it doesn't exist
+    if not os.path.exists(os.path.dirname(filename)):
+        os.makedirs(os.path.dirname(filename), exist_ok=True)
+    
+    # Convert boolean/binary mask to uint8 (0 or 255)
+    if isinstance(mask, torch.tensor):
+        mask = mask.cpu().numpy()
+    mask_uint8 = np.uint8(mask) * 255
+    
+    # Save the mask
+    cv2.imwrite(filename, mask_uint8)
